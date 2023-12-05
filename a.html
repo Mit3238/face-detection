@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenCV.js Example</title>
+    <script async src="https://docs.opencv.org/master/opencv.js" onload="onOpenCvReady();" ></script>
+
+    <script>
+      // let cv = window.cv
+      function onOpenCvReady() {
+          const videoElement = document.getElementById('videoElement');
+  
+          navigator.mediaDevices.getUserMedia({ video: true })
+              .then((stream) => {
+                  videoElement.srcObject = stream;
+              })
+              .catch((err) => {
+                  console.error('Error accessing webcam: ', err);
+              });
+  
+          videoElement.onloadedmetadata = () => {
+              const videoWidth = videoElement.videoWidth;
+              const videoHeight = videoElement.videoHeight;
+              const canvas = document.getElementById('outputCanvas');
+              const ctx = canvas.getContext('2d');
+  
+              const cap = new cv.VideoCapture(videoElement);
+  
+              const faceCascade = new cv.CascadeClassifier();
+            //   faceCascade.load('https://raw.githubusercontent.com/opencv/opencv/4.x/data/haarcascades/haarcascade_frontalface_default.xml');
+              faceCascade.load('haarcascade_frontalface_default.xml');
+              // log that the classifier has been loaded
+            //   console.log(faceCascade);
+            // fetch('haarcascade_frontalface_default.xml')
+            // .then(response => response.text())
+            // .then(xmlText => {
+            //     const faceDetection = new cv.CascadeClassifier();
+            //     faceDetection.loadXMLFromString(xmlText);
+
+            //     // Rest of your code for face detection
+            // })
+            // .catch(error => {
+            //     console.error('Error loading XML file:', error);
+            // });
+  
+              const processVideo = () => {
+                  const frame = new cv.Mat(videoHeight, videoWidth, cv.CV_8UC4);
+                  cap.read(frame);
+  
+                  const gray = new cv.Mat();
+                  cv.cvtColor(frame, gray, cv.COLOR_RGBA2GRAY);
+  
+                  const faces = new cv.RectVector();
+                //   console.log(faces);
+                  console.log(videoWidth, videoHeight);
+                //   faceCascade.detectMultiScale(gray, faces, 1.1, 3, 0, [0, 0], [videoWidth, videoHeight]);
+                  faceCascade.detectMultiScale(gray, faces, 1.05, 1);
+  
+                  for (let i = 0; i < faces.size(); ++i) {
+                      const face = faces.get(i);
+                      const point1 = new cv.Point(face.x, face.y);
+                      const point2 = new cv.Point(face.x + face.width, face.y + face.height);
+                      cv.rectangle(frame, point1, point2, [255, 0, 0, 255]);
+                  }
+  
+                  ctx.clearRect(0, 0, canvas.width, canvas.height);
+                  ctx.drawImage(cv.imshow('outputCanvas', frame), 0, 0, canvas.width, canvas.height);
+  
+                  gray.delete();
+                  faces.delete();
+                  frame.delete();
+  
+                  requestAnimationFrame(processVideo);
+              };
+  
+              processVideo();
+          };
+      }
+  </script>
+  
+  
+</head>
+<body>
+  <h1>OpenCV.js Face Detection</h1>
+  <video id="videoElement" width="640" height="480" autoplay></video>
+  <canvas id="outputCanvas" width="640" height="480"></canvas>
+</body>
+
+</html>
